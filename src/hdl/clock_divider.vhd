@@ -51,7 +51,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
 
 entity clock_divider is
-	generic ( constant k_DIV : natural := 2	); -- How many clk cycles until slow clock toggles
+	generic ( constant k_DIV : natural := 50000000	); -- How many clk cycles until slow clock toggles
 											   -- Effectively, you divide the clk double this 
 											   -- number (e.g., k_DIV := 2 --> clock divider of 4)
 	port ( 	i_clk    : in std_logic;
