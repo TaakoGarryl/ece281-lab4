@@ -133,18 +133,21 @@ architecture top_basys3_arch of top_basys3 is
     signal w_clk : std_logic;
     signal i_up_down : std_logic;
     signal w_floor_num : std_logic_vector(3 downto 0);
- --   signal w_display_num : std_logic_vector(4 downto 0);
+    signal w_display_num : std_logic_vector(3 downto 0);
     signal w_display_light : std_logic;
   --  signal w_clock_light : std_logic;
     signal w_reset_elevator : std_logic;
     signal w_reset_clk : std_logic;
+    signal w_digit_H : std_logic_vector( 3 downto 0);
+    signal w_digit_L :std_logic_vector(3 downto 0);
+    signal w_TDM_clk :std_logic;
     
 begin
 	-- PORT MAPS ----------------------------------------
 	
 	sevenSegDecoder_inst : sevenSegDecoder
 	   Port map( 
-                  i_D => w_floor_num,
+                  i_D => w_display_num,
                   o_S => seg
         );
 	
@@ -158,22 +161,36 @@ begin
         );
 	
 	clock_divider_inst : clock_divider
-	   port map(
+	 generic map ( 
+                            k_DIV => 50000000    
+                           )                     
+	   port map(	   
 	      	i_clk   => clk,
             i_reset => btnL or btnU,
             o_clk   => w_clk
         );
+     
+    clock_divider_TDM_inst : clock_divider
+    generic map ( 
+                 k_DIV => 3125000	
+                )
+                
+               port map(
+                      i_clk   => clk,
+                    i_reset => btnL or btnU,
+                    o_clk   => w_TDM_clk
+                );
 	
-  --  TDM4_inst : TDM4 
-  --      port map(
-  --          i_clk	=> w_clk,
-  --          i_reset => w_reset_elevator,
-  --          i_D3    => "0000",
-  --          i_D2    => "0000",
-  --          i_D1    => "0000",
-   --         i_D0    => w_floor_num, 
-   --         o_data  => w_display_num
-   --     );
+    TDM4_inst : TDM4 
+        port map(
+            i_clk	=> w_TDM_clk,
+            i_reset => w_reset_elevator,
+            i_D3    => w_digit_H,
+            i_D2    => w_digit_L,
+            i_D1    => "0000",
+            i_D0    => "0000",
+            o_data  => w_display_num
+        );
 	
 	
 	-- CONCURRENT STATEMENTS ----------------------------
@@ -185,7 +202,21 @@ begin
 	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
 	
 	-- wire up active-low 7SD anodes (an) as required
-	an <= (2 => w_display_light, others => '1');
+	an <= (2 => w_display_light, 3 => w_display_light, others => '1');
 	-- Tie any unused anodes to power ('1') to keep them off
+	
+	register_proc : process (w_floor_num)
+        begin
+           if w_floor_num = "0000" then
+               w_digit_H <= "0001";
+               w_digit_L <= "0110";
+           elsif w_floor_num >= "1010" then
+               w_digit_H <= "0001";
+               w_digit_L <= std_logic_vector(unsigned(w_floor_num) - 10);
+           else 
+               w_digit_H <= "0000";
+               w_digit_L <= w_floor_num;
+           end if;
+        end process;
 	
 end top_basys3_arch;
